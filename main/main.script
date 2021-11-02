@@ -1,0 +1,128 @@
+local game_over = false;
+local game_started = false;
+local is_first_turn = true;
+local turn_color
+
+go.property(is_builded, false)
+go.property(bricks, {})
+
+local block_width = 50
+local block_height = 50
+
+colors = {hash("red"),hash("blue")}
+
+local function cell_pos(x, y)
+	return vmath.vector3(x * block_width  + 195, y * block_height + 83 , 0.01)
+end
+
+function init(self)
+	self.bricks = {}
+	self.is_builded = false
+	msg.post(".", "acquire_input_focus")
+end
+
+function table.contains(table, element)
+	for _, value in pairs(table) do
+		if value == element then
+			return true
+		end
+	end
+	return false
+end
+
+function rand_perm()
+	local t = {}
+	for i = 1, 100 do
+		t[i] = i
+	end
+	for i = 1, 70 do
+		local j = math.random(i, 100)
+		t[i], t[j] = t[j], t[i]
+	end
+	return t
+end
+
+local function build_board()
+	board = {}
+	rand = rand_perm()
+	for i, line in ipairs(rand) do 
+		--print(i)
+	end
+	local x, y, w, h = tilemap.get_bounds("/board#level")
+	for ix = x, x + w - 1 do 
+		board[ix] = {}
+		for iy = y, y + h - 1 do
+			local pos = cell_pos(ix, iy)
+			local current_color
+			if rand[(ix-1)*10 + iy] <= 50 then
+				current_color = hash("red")
+			else
+				current_color = hash("blue")
+			end
+			local id = factory.create("#chip_factory", pos, nil, {true_color = current_color})
+			board[ix][iy] = {id = id, x = ix, y = iy, true_color = current_color}
+			msg.post(id, "start_game", {color = current_color})
+		end
+	end
+	return board
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Learn more: https://defold.com/manuals/script/
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender) 
+	if message_id == hash("update_score") then 
+		msg.post("/board#board", "update_score")
+	elseif message_id == hash("start_game") then
+		for i, line in ipairs(self.bricks) do 
+			for j, line2 in ipairs(line) do
+				go.delete(line2.id)
+			end
+		end
+		self.bricks = build_board()
+	elseif message_id == hash("game_over") then
+		game_over = true
+	elseif message_id == hash("building_board") then
+		self.board_is_builded = true
+	end	
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("touch") and action.pressed then
+		local x = action.x
+		local y = action.y
+		if x > 222 and x < 322 and y < 104 then 
+			game_started = true
+		else  
+			if not game_over and game_started and self.board_is_builded then
+				local x = math.ceil((action.x + 25)  / block_width) - 5
+				local y = math.ceil((action.y - 5)/ block_height) - 2
+				if x <= 10 and x >= 1 and y >= 1 and y<=10 then
+					local brick = self.bricks[x][y].id
+					if is_first_turn then
+						msg.post(brick, "check_chip", {color = self.bricks[x][y].true_color})
+						is_first_turn = false
+						turn_color = self.bricks[x][y].true_color
+					else
+						msg.post(brick, "check_chip", {color = turn_color})
+					end
+				end
+			end
+		end
+	end
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Learn more: https://defold.com/manuals/hot-reload/
+	-- Remove this function if not needed
+end
