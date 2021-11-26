@@ -1,17 +1,19 @@
 [bootstrap]
 main_collection = /main/main.collectionc
 
-[display]
-width = 960
-height = 640
-
 [script]
 shared_state = 1
 
-[webmonetization]
-payment_pointer = YOUR_PAYMENT_POINTER
+[display]
+width = 2048
+height = 1024
+
+[android]
+input_method = HiddenInputField
 
 [project]
-title = Web Monetized game
-dependencies#0 = https://github.com/defold/extension-webmonetization/archive/master.zip
+title = TinyCivCat
+
+[sprite]
+max_count = 512
 
